@@ -1,0 +1,45 @@
+public StudentEmailInfoList fetchStudentDetails(Integer schoolId, String studentId) {
+		StudentEmailInfo[] studentEmailInfo = null;
+		StudentEmailInfoList studentEmailInfoList = new StudentEmailInfoList();
+		try {
+			String tableName = "mstStudentEmailInfo";
+			SchoolApiInfoDTO schoolInfo =fetchSchoolDetails(schoolId) ;
+			String table = "_proc";
+			if (schoolInfo != null && schoolInfo.getDb() != null) {
+				studentEmailInfoList.setSchoolApi(schoolInfo);
+				URL url = new URL(dreamFactoryUrl + schoolInfo.getDb() + "/" + table + "/" + tableName + "("
+						+ studentId + ")");
+				HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+				conn.setRequestMethod("GET");
+				conn.setRequestProperty("Accept", "application/json");
+				conn.setRequestProperty("X-DreamFactory-Api-Key", dreamFactoryApiKey);
+				if (conn.getResponseCode() != 200) {
+					throw new RuntimeException("Failed : HTTP error code : " + conn.getResponseCode());
+				}
+
+				BufferedReader br = new BufferedReader(new InputStreamReader((conn.getInputStream())));
+				ObjectMapper mapper = new ObjectMapper();
+				String output;
+				System.out.println("Output from Server .... \n");
+				while ((output = br.readLine()) != null) {
+					String jsonOutput = output;
+					studentEmailInfo = mapper.readValue(jsonOutput, StudentEmailInfo[].class);
+				}
+
+				conn.disconnect();
+			} else {
+				log.error("School Details are missing");
+				throw new MalformedURLException("issue in fetch studentsByclass School Details are missing");
+			}
+		} catch (MalformedURLException e) {
+			log.info(e.getMessage());
+		} catch (IOException e) {
+			log.info(e.getMessage());
+		}
+		if (null != studentEmailInfo && studentEmailInfo.length > 0) {
+			List<StudentEmailInfo> listInfo = Arrays.asList(studentEmailInfo);
+			studentEmailInfoList.setSources(listInfo);
+			return studentEmailInfoList;
+		}
+		return null;
+	}
